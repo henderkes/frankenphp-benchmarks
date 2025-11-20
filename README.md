@@ -34,16 +34,6 @@
 
 ## Running the Benchmarks
 
-Build the Docker images:
-
-```bash
-docker build -f nginx.Dockerfile -t nginx-bench .
-docker build -f frankenphp.Dockerfile -t frankenphp-bench .
-docker build -f frankenrpm.Dockerfile -t frankenrpm-bench .
-```
-
-Run the benchmarks:
-
 ```bash
 ./run.sh 8 100 60
 # runs wrk with 8 threads, 100 connections and for 60 seconds per script
