@@ -1,10 +1,3 @@
-## Benchmark Configuration
-
-- **Duration**: 15 seconds per test
-- **Threads**: 4
-- **Connections**: 20
-- **Tool**: wrk
-
 ### Test Scripts
 
 - **code1.php**: Simple HTML output (50 iterations of 1KB string)
@@ -17,6 +10,8 @@
 <summary><b>AMD Ryzen 7 3700X - 8 cores, 32 GB RAM</b></summary>
 
 ### Results
+
+8 threads, 20 connections, 15 seconds:
 
 | Test | Metric | Nginx+PHP-FPM<br>(Baseline) | FrankenPHP Docker<br>(Δ%) | FrankenPHP RPM<br>(Δ%) |
 |------|--------|---------------------------|--------------------------|----------------------|
@@ -50,8 +45,7 @@ docker build -f frankenrpm.Dockerfile -t frankenrpm-bench .
 Run the benchmarks:
 
 ```bash
-docker run --rm nginx-bench
-docker run --rm frankenphp-bench
-docker run --rm frankenrpm-bench
+./run.sh 8 100 60
+# runs wrk with 8 threads, 100 connections and for 60 seconds per script
 ```
 
