@@ -1,5 +1,12 @@
 FROM registry.access.redhat.com/ubi10/ubi:latest
 
+ARG WRK_THREADS=8
+ARG WRK_CONNECTIONS=20
+ARG WRK_TIME=15
+ENV WRK_THREADS=${WRK_THREADS}
+ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
+ENV WRK_TIME=${WRK_TIME}
+
 RUN dnf install -y https://rpm.henderkes.com/static-php-1-0.noarch.rpm && \
     dnf module enable -y php-zts:static-8.4 && \
     dnf install -y frankenphp curl perl unzip gcc make git openssl-devel && \
@@ -10,36 +17,7 @@ RUN dnf install -y https://rpm.henderkes.com/static-php-1-0.noarch.rpm && \
 
 WORKDIR /app
 
-COPY <<'EOF' /app/code1.php
-<?php
-header('content-type: text/html; charset=utf-8');
-$str = str_repeat('x', 1023) . "\n";
-for ($i = 0; $i < 50; $i++) {
-	echo $str;
-}
-EOF
-
-COPY <<'EOF' /app/code2.php
-<?php
-header('content-type: application/pdf');
-$str = str_repeat('x', 1023) . "\n";
-for ($i = 0; $i < 50; $i++) {
-	echo $str;
-}
-EOF
-
-COPY <<'EOF' /app/code3.php
-<?php
-$random = new \Random\Randomizer(new \Random\Engine\Xoshiro256StarStar());
-for ($i = 0; $i < 50; $i++) {
-	echo $random->getBytesFromString("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", 1023), "\n";
-}
-EOF
-
-COPY <<'EOF' /app/code4.php
-<?php
-echo "Hello World!";
-EOF
+COPY *.php /app/
 
 COPY <<'EOF' /app/Caddyfile
 {
@@ -59,17 +37,16 @@ COPY <<'EOF' /benchmark.sh
 #!/bin/bash
 set -e
 
-frankenphp run --config /app/Caddyfile > /dev/null 2>&1 &
-SERVER_PID=$!
-
+frankenphp start --config /app/Caddyfile &>/dev/null
 sleep 2
 
 echo "=== FrankenPHP RPM Benchmark Results ==="
 echo ""
 
-for script in code1.php code2.php code3.php code4.php; do
-    echo "--- $script ---"
-    wrk -t4 -c20 -d15s --latency http://localhost:80/$script 2>&1 | awk '
+for script in /app/*.php; do
+    filename=$(basename "$script")
+    echo "--- $filename ---"
+    wrk -t${WRK_THREADS} -c${WRK_CONNECTIONS} -d${WRK_TIME}s --latency http://localhost:80/$filename 2>&1 | awk '
         /Requests\/sec:/ { printf "RPS: %s\n", $2 }
         /Transfer\/sec:/ { printf "Transfer/s: %s\n", $2 }
         /^    Latency/ { printf "Avg: %s\n", $2 }
@@ -79,8 +56,7 @@ for script in code1.php code2.php code3.php code4.php; do
     echo ""
 done
 
-kill $SERVER_PID 2>/dev/null || true
-wait $SERVER_PID 2>/dev/null || true
+frankenphp stop
 EOF
 
 RUN chmod +x /benchmark.sh

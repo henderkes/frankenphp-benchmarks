@@ -1,5 +1,12 @@
 FROM php:8.4-fpm
 
+ARG WRK_THREADS=8
+ARG WRK_CONNECTIONS=20
+ARG WRK_TIME=15
+ENV WRK_THREADS=${WRK_THREADS}
+ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
+ENV WRK_TIME=${WRK_TIME}
+
 RUN apt-get update && \
     apt-get install -y nginx wrk curl && \
     rm -rf /var/lib/apt/lists/* && \
@@ -7,36 +14,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY <<'EOF' /app/code1.php
-<?php
-header('content-type: text/html; charset=utf-8');
-$str = str_repeat('x', 1023) . "\n";
-for ($i = 0; $i < 50; $i++) {
-	echo $str;
-}
-EOF
-
-COPY <<'EOF' /app/code2.php
-<?php
-header('content-type: application/pdf');
-$str = str_repeat('x', 1023) . "\n";
-for ($i = 0; $i < 50; $i++) {
-	echo $str;
-}
-EOF
-
-COPY <<'EOF' /app/code3.php
-<?php
-$random = new \Random\Randomizer(new \Random\Engine\Xoshiro256StarStar());
-for ($i = 0; $i < 50; $i++) {
-	echo $random->getBytesFromString("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", 1023), "\n";
-}
-EOF
-
-COPY <<'EOF' /app/code4.php
-<?php
-echo "Hello World!";
-EOF
+COPY *.php /app/
 
 COPY <<'EOF' /etc/nginx/nginx.conf
 user www-data;
@@ -51,17 +29,17 @@ events {
 http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
-    
+
     access_log off;
     sendfile on;
     tcp_nopush on;
     keepalive_timeout 65;
-    
+
     server {
         listen 80;
         root /app;
         index index.php;
-        
+
         location ~ \.php$ {
             fastcgi_pass 127.0.0.1:9000;
             fastcgi_index index.php;
@@ -91,12 +69,13 @@ NGINX_PID=$!
 
 sleep 2
 
-echo "=== Nginx + PHP-FPM Benchmark Results ==="
+echo "=== Nginx+PHP-FPM Benchmark Results ==="
 echo ""
 
-for script in code1.php code2.php code3.php code4.php; do
-    echo "--- $script ---"
-    wrk -t4 -c20 -d15s --latency http://localhost:80/$script 2>&1 | awk '
+for script in /app/*.php; do
+    filename=$(basename "$script")
+    echo "--- $filename ---"
+    wrk -t${WRK_THREADS} -c${WRK_CONNECTIONS} -d${WRK_TIME}s --latency http://localhost:80/$filename 2>&1 | awk '
         /Requests\/sec:/ { printf "RPS: %s\n", $2 }
         /Transfer\/sec:/ { printf "Transfer/s: %s\n", $2 }
         /^    Latency/ { printf "Avg: %s\n", $2 }
