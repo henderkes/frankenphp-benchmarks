@@ -13,7 +13,7 @@ for dockerfile in *.Dockerfile; do
         --build-arg WRK_TIME="$TIME" .
 done
 
-echo "Build complete (threads=$THREADS, connections=$CONNECTIONS, time=$TIME)"
+echo "Build complete (connections=$CONNECTIONS, time=$TIME)"
 echo ""
 
 for dockerfile in *.Dockerfile; do
