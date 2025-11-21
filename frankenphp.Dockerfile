@@ -9,29 +9,16 @@ ENV WRK_TIME=${WRK_TIME}
 
 RUN install-php-extensions opcache
 
-WORKDIR /app
-
-COPY *.php /app/
-
-COPY <<'EOF' /app/Caddyfile
-{
-    frankenphp {
-        num_threads 64
-    }
-}
-
-http://
-
-php {
-    root /app
-}
-EOF
-
-RUN apt-get update && apt-get install -y wrk curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -L https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_$(dpkg --print-architecture).tar.gz | tar xz -C /usr/local/bin && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY <<'EOF' /benchmark.sh
 #!/bin/bash
 set -e
+
+BENCH_NAME="frankenphp"
 
 frankenphp start --config /app/Caddyfile &>/dev/null
 
@@ -41,15 +28,14 @@ echo "=== FrankenPHP Docker Benchmark Results ==="
 echo ""
 
 for script in /app/*.php; do
-    filename=$(basename "$script")
-    echo "--- $filename ---"
-    wrk -t${WRK_THREADS} -c${WRK_CONNECTIONS} -d${WRK_TIME}s --latency http://localhost:80/$filename 2>&1 | awk '
-        /Requests\/sec:/ { printf "RPS: %s\n", $2 }
-        /Transfer\/sec:/ { printf "Transfer/s: %s\n", $2 }
-        /^    Latency/ { printf "Avg: %s\n", $2 }
-        /     50%/ { printf "50%%: %s\n", $2 }
-        /     99%/ { printf "99%%: %s\n", $2 }
-    '
+    filename=$(basename "$script" .php)
+    echo "--- ${filename}.php ---"
+    
+    echo "GET http://localhost:80/${filename}.php" | vegeta attack -duration=${WRK_TIME}s -rate=0 -max-workers=${WRK_CONNECTIONS} > /tmp/${filename}.bin
+    vegeta report /tmp/${filename}.bin
+    vegeta plot /tmp/${filename}.bin > /app/${filename}-${BENCH_NAME}.html
+    chmod 666 /app/${filename}-${BENCH_NAME}.html
+    echo "Latency plot: ${filename}-${BENCH_NAME}.html"
     echo ""
 done
 
@@ -57,5 +43,7 @@ frankenphp stop
 EOF
 
 RUN chmod +x /benchmark.sh
+
+WORKDIR /app
 
 CMD ["/benchmark.sh"]
