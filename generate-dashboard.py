@@ -46,6 +46,7 @@ def get_metrics(vegeta_bin):
 
     print(f"  Sampled {len(results)} data points")
     metrics['results'] = results
+    metrics['sample_rate'] = sample_rate
     return metrics
 
 def main():
@@ -152,7 +153,7 @@ def main():
                 <canvas id="latencyTimeChart"></canvas>
             </div>
             <div class="chart-container">
-                <h3>Throughput Over Time (500ms windows)</h3>
+                <h3>Throughput Over Time (100ms windows)</h3>
                 <canvas id="rpsTimeChart"></canvas>
             </div>
         </div>
@@ -245,13 +246,13 @@ def main():
             }
         });
 
-        // RPS Over Time (using 500ms buckets for smoother visualization)
+        // RPS Over Time (using 100ms buckets)
         const allRpsDatasets = [];
 
         filenames.forEach((filename, idx) => {
             const results = data[filename].results;
             const startTime = new Date(results[0].timestamp).getTime();
-            const bucketSize = 500; // 500ms buckets
+            const bucketSize = 100;
             const rpsBuckets = {};
 
             results.forEach(r => {
@@ -261,7 +262,7 @@ def main():
             });
 
             // Extrapolate to RPS based on sample rate
-            const sampleRate = Math.max(1, data[filename].total_requests / 200);
+            const sampleRate = data[filename].sample_rate;
 
             const rpsData = Object.keys(rpsBuckets).sort((a, b) => a - b).map(bucket => ({
                 x: bucket * bucketSize / 1000,

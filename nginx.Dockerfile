@@ -69,16 +69,17 @@ sleep 2
 echo "=== Nginx+PHP-FPM Benchmark Results ==="
 echo ""
 
+mkdir -p /app/vegeta
 BIN_FILES=""
 
 for script in /app/*.php; do
     filename=$(basename "$script" .php)
     echo "--- ${filename}.php ---"
 
-    echo "GET http://localhost:80/${filename}.php" | vegeta attack -duration=${WRK_TIME}s -rate=0 -max-workers=${WRK_CONNECTIONS} > /tmp/${filename}.bin
-    vegeta report /tmp/${filename}.bin
+    echo "GET http://localhost:80/${filename}.php" | vegeta attack -duration=${WRK_TIME}s -rate=0 -max-workers=${WRK_CONNECTIONS} > /app/vegeta/${filename}-${BENCH_NAME}.bin
+    vegeta report /app/vegeta/${filename}-${BENCH_NAME}.bin
 
-    BIN_FILES="$BIN_FILES /tmp/${filename}.bin"
+    BIN_FILES="$BIN_FILES /app/vegeta/${filename}-${BENCH_NAME}.bin"
     echo ""
 done
 
