@@ -1,4 +1,5 @@
-http://
-php {
-    root /app
+http:// {
+    php {
+       root /app
+    }
 }

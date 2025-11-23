@@ -1,4 +1,11 @@
-http://
-php {
-    root /app
+{
+    frankenphp {
+       num_threads 16
+   }
+}
+
+http:// {
+    php {
+        root /app
+    }
 }
