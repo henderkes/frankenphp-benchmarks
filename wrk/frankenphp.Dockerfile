@@ -26,6 +26,8 @@ sleep 2
 
 mkdir -p /app/json
 
+echo "${DOCKER_NAME}"
+
 for script in /app/*.php; do
     filename=$(basename "$script")
     out=$(wrk -t${WRK_THREADS} -c${WRK_CONNECTIONS} -d${WRK_TIME}s --latency http://localhost:80/$filename 2>&1)
@@ -34,6 +36,8 @@ for script in /app/*.php; do
     avg=$(echo "$out" | awk '/^    Latency/ { print $2 }')
     p50=$(echo "$out" | awk '/     50%/ { print $2 }')
     p99=$(echo "$out" | awk '/     99%/ { print $2 }')
+
+    echo "${filename}: rps=${rps} p99=${p99}"
 
     cat > "/app/json/${filename%.*}-${DOCKER_NAME}.json" <<JSON
 {
