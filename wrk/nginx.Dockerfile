@@ -1,15 +1,20 @@
 FROM php:8.4-fpm
 
+ARG WRK_THREADS=8
 ARG WRK_CONNECTIONS=20
 ARG WRK_TIME=15
+ENV WRK_THREADS=${WRK_THREADS}
 ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
 ENV WRK_TIME=${WRK_TIME}
 
 RUN apt-get update && \
-    apt-get install -y nginx curl python3 && \
-    curl -L https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_$(dpkg --print-architecture).tar.gz | tar xz -C /usr/local/bin && \
+    apt-get install -y nginx wrk curl && \
     rm -rf /var/lib/apt/lists/* && \
     docker-php-ext-install opcache
+
+WORKDIR /app
+
+COPY *.php /app/
 
 COPY <<'EOF' /etc/nginx/nginx.conf
 user www-data;
@@ -58,8 +63,6 @@ COPY <<'EOF' /benchmark.sh
 #!/bin/bash
 set -e
 
-BENCH_NAME="nginx"
-
 php-fpm -D
 nginx -g 'daemon off;' > /dev/null 2>&1 &
 NGINX_PID=$!
@@ -69,30 +72,23 @@ sleep 2
 echo "=== Nginx+PHP-FPM Benchmark Results ==="
 echo ""
 
-mkdir -p /app/vegeta
-BIN_FILES=""
-
 for script in /app/*.php; do
-    filename=$(basename "$script" .php)
-    echo "--- ${filename}.php ---"
-
-    echo "GET http://localhost:80/${filename}.php" | vegeta attack -duration=${WRK_TIME}s -rate=0 -max-workers=${WRK_CONNECTIONS} > /app/vegeta/${filename}-${BENCH_NAME}.bin
-    vegeta report /app/vegeta/${filename}-${BENCH_NAME}.bin
-
-    BIN_FILES="$BIN_FILES /app/vegeta/${filename}-${BENCH_NAME}.bin"
+    filename=$(basename "$script")
+    echo "--- $filename ---"
+    wrk -t${WRK_THREADS} -c${WRK_CONNECTIONS} -d${WRK_TIME}s --latency http://localhost:80/$filename 2>&1 | awk '
+        /Requests\/sec:/ { printf "RPS: %s\n", $2 }
+        /Transfer\/sec:/ { printf "Transfer/s: %s\n", $2 }
+        /^    Latency/ { printf "Avg: %s\n", $2 }
+        /     50%/ { printf "50%%: %s\n", $2 }
+        /     99%/ { printf "99%%: %s\n", $2 }
+    '
     echo ""
 done
-
-cd /tmp && python3 /app/generate-dashboard.py "$BENCH_NAME" $BIN_FILES && mv benchmark-${BENCH_NAME}.html /app/
-
-echo "Dashboard: benchmark-${BENCH_NAME}.html"
 
 kill $NGINX_PID 2>/dev/null || true
 wait $NGINX_PID 2>/dev/null || true
 EOF
 
 RUN chmod +x /benchmark.sh
-
-WORKDIR /app
 
 CMD ["/benchmark.sh"]
