@@ -9,7 +9,7 @@ ENV WRK_TIME=${WRK_TIME}
 
 RUN dnf install -y https://rpm.henderkes.com/static-php-1-0.noarch.rpm && \
     dnf module enable -y php-zts:static-8.5 && \
-    dnf install -y frankenphp curl perl unzip gcc make git openssl-devel && \
+    dnf install -y frankenphp curl perl unzip gcc make git openssl-devel brotli && \
     cd /tmp && git clone https://github.com/wg/wrk.git && cd wrk && make && cp wrk /usr/local/bin/ && cd / && rm -rf /tmp/wrk && \
     dnf remove -y gcc make git openssl-devel && \
     dnf autoremove -y && \
