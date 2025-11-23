@@ -1,2 +1,4 @@
 .idea
-vegeta/
+vegeta/vegeta/
+wrk/json
+.*/frankenphp
