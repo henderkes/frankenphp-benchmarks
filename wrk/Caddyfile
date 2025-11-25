@@ -1,9 +1,3 @@
-{
-    frankenphp {
-       num_threads 16
-   }
-}
-
 http:// {
     php {
         root /app

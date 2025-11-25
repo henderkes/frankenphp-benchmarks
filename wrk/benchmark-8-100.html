@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>wrk Benchmarks</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; margin-bottom: 28px; min-width: 760px; }
+    th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: right; }
+    th { background: #f0f0f0; }
+    td.label, th.label { text-align: left; }
+    .delta { font-size: 0.9em; display: block; }
+    .best { background: #d8f5d0; }        /* light green */
+    .worst { background: #ffd8d6; }       /* light red */
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <h1>wrk Benchmark Comparison</h1>
+    <p>Baseline: nginx. Green percentage = improvement vs baseline. Red = regression vs baseline.</p>
+
+<h2>All metrics</h2>
+<table>
+<tr><th class="label" rowspan="2">Script</th><th colspan="3">Requests/sec (higher is better)</th><th colspan="3">Avg latency ms (lower is better)</th><th colspan="3">p50 ms (lower is better)</th><th colspan="3">p99 ms (lower is better)</th></tr>
+<tr><th>nginx</th><th>frankenphp</th><th>frankenrpm</th><th>nginx</th><th>frankenphp</th><th>frankenrpm</th><th>nginx</th><th>frankenphp</th><th>frankenrpm</th><th>nginx</th><th>frankenphp</th><th>frankenrpm</th></tr>
+<tr>
+<td class="label">code1.php</td>
+<td class="worst">45,147.10</td>
+<td class="">47,034.74
+<span class="delta" style="color:#0a0">+4.2%</span></td>
+<td class="best">52,182.79
+<span class="delta" style="color:#0a0">+15.6%</span></td>
+<td class="best">2.37 ms</td>
+<td class="worst">4.50 ms
+<span class="delta" style="color:#c00">+89.9%</span></td>
+<td class="">2.50 ms
+<span class="delta" style="color:#c00">+5.5%</span></td>
+<td class="worst">1.80 ms</td>
+<td class="best">1.26 ms
+<span class="delta" style="color:#0a0">-30.0%</span></td>
+<td class="">1.42 ms
+<span class="delta" style="color:#0a0">-21.1%</span></td>
+<td class="best">6.82 ms</td>
+<td class="worst">27.27 ms
+<span class="delta" style="color:#c00">+299.9%</span></td>
+<td class="">11.67 ms
+<span class="delta" style="color:#c00">+71.1%</span></td>
+</tr>
+<tr>
+<td class="label">code2.php</td>
+<td class="worst">45,471.99</td>
+<td class="">46,847.62
+<span class="delta" style="color:#0a0">+3.0%</span></td>
+<td class="best">52,032.18
+<span class="delta" style="color:#0a0">+14.4%</span></td>
+<td class="best">2.34 ms</td>
+<td class="worst">4.51 ms
+<span class="delta" style="color:#c00">+92.7%</span></td>
+<td class="">2.52 ms
+<span class="delta" style="color:#c00">+7.7%</span></td>
+<td class="worst">1.80 ms</td>
+<td class="best">1.27 ms
+<span class="delta" style="color:#0a0">-29.4%</span></td>
+<td class="">1.43 ms
+<span class="delta" style="color:#0a0">-20.6%</span></td>
+<td class="best">6.49 ms</td>
+<td class="worst">27.32 ms
+<span class="delta" style="color:#c00">+321.0%</span></td>
+<td class="">11.88 ms
+<span class="delta" style="color:#c00">+83.1%</span></td>
+</tr>
+<tr>
+<td class="label">code3.php</td>
+<td class="">40,003.28</td>
+<td class="worst">35,974.29
+<span class="delta" style="color:#c00">-10.1%</span></td>
+<td class="best">42,488.44
+<span class="delta" style="color:#0a0">+6.2%</span></td>
+<td class="best">2.64 ms</td>
+<td class="worst">5.77 ms
+<span class="delta" style="color:#c00">+118.6%</span></td>
+<td class="">3.09 ms
+<span class="delta" style="color:#c00">+17.0%</span></td>
+<td class="worst">2.08 ms</td>
+<td class="best">1.70 ms
+<span class="delta" style="color:#0a0">-18.3%</span></td>
+<td class="">1.77 ms
+<span class="delta" style="color:#0a0">-14.9%</span></td>
+<td class="best">6.99 ms</td>
+<td class="worst">34.53 ms
+<span class="delta" style="color:#c00">+394.0%</span></td>
+<td class="">15.74 ms
+<span class="delta" style="color:#c00">+125.2%</span></td>
+</tr>
+<tr>
+<td class="label">code4.php</td>
+<td class="worst">50,645.03</td>
+<td class="">88,976.00
+<span class="delta" style="color:#0a0">+75.7%</span></td>
+<td class="best">91,595.06
+<span class="delta" style="color:#0a0">+80.9%</span></td>
+<td class="">2.17 ms</td>
+<td class="worst">2.60 ms
+<span class="delta" style="color:#c00">+19.8%</span></td>
+<td class="best">1.48 ms
+<span class="delta" style="color:#0a0">-31.8%</span></td>
+<td class="worst">1.81 ms</td>
+<td class="best">0.63 ms
+<span class="delta" style="color:#0a0">-65.0%</span></td>
+<td class="">0.83 ms
+<span class="delta" style="color:#0a0">-54.3%</span></td>
+<td class="best">4.38 ms</td>
+<td class="worst">15.87 ms
+<span class="delta" style="color:#c00">+262.3%</span></td>
+<td class="">5.28 ms
+<span class="delta" style="color:#c00">+20.5%</span></td>
+</tr>
+<tr>
+<td class="label">code5.php</td>
+<td class="">6,409.79</td>
+<td class="worst">2,013.14
+<span class="delta" style="color:#c00">-68.6%</span></td>
+<td class="best">7,224.01
+<span class="delta" style="color:#0a0">+12.7%</span></td>
+<td class="">15.22 ms</td>
+<td class="worst">68.13 ms
+<span class="delta" style="color:#c00">+347.6%</span></td>
+<td class="best">13.84 ms
+<span class="delta" style="color:#0a0">-9.1%</span></td>
+<td class="">14.46 ms</td>
+<td class="worst">41.31 ms
+<span class="delta" style="color:#c00">+185.7%</span></td>
+<td class="best">12.25 ms
+<span class="delta" style="color:#0a0">-15.3%</span></td>
+<td class="best">28.47 ms</td>
+<td class="worst">530.91 ms
+<span class="delta" style="color:#c00">+1764.8%</span></td>
+<td class="">41.78 ms
+<span class="delta" style="color:#c00">+46.8%</span></td>
+</tr>
+</table>
+
+  </body>
+  </html>

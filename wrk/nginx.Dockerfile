@@ -15,8 +15,6 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY *.php /app/
-
 COPY <<'EOF' /etc/nginx/nginx.conf
 user www-data;
 worker_processes auto;
@@ -83,7 +81,7 @@ for script in /app/*.php; do
     p50=$(echo "$out" | awk '/     50%/ { print $2 }')
     p99=$(echo "$out" | awk '/     99%/ { print $2 }')
 
-    echo "${filename}: rps=${rps} p99=${p99}"
+    echo "${filename}: rps=${rps} avg=${avg} p99=${p99}"
 
     cat > "/app/json/${filename%.*}-${DOCKER_NAME}.json" <<JSON
 {

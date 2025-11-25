@@ -18,13 +18,15 @@ RUN dnf install -y https://rpm.henderkes.com/static-php-1-0.noarch.rpm && \
 
 WORKDIR /app
 
-COPY *.php /app/
+# Use repo-provided frankenphp binary inside container to avoid bind-mount perf penalties
+COPY frankenphp /usr/local/bin/frankenphp
+RUN chmod +x /usr/local/bin/frankenphp
 
 COPY <<'EOF' /benchmark.sh
 #!/bin/bash
 set -e
 
-./frankenphp start --config /app/Caddyfile &>/dev/null
+/usr/local/bin/frankenphp start --config /app/Caddyfile &>/dev/null
 sleep 2
 
 mkdir -p /app/json
@@ -40,7 +42,7 @@ for script in /app/*.php; do
     p50=$(echo "$out" | awk '/     50%/ { print $2 }')
     p99=$(echo "$out" | awk '/     99%/ { print $2 }')
 
-    echo "${filename}: rps=${rps} p99=${p99}"
+    echo "${filename}: rps=${rps} avg=${avg} p99=${p99}"
 
     cat > "/app/json/${filename%.*}-${DOCKER_NAME}.json" <<JSON
 {
@@ -60,7 +62,7 @@ for script in /app/*.php; do
 JSON
 done
 
-./frankenphp stop
+/usr/local/bin/frankenphp stop
 EOF
 
 RUN chmod +x /benchmark.sh

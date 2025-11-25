@@ -12,8 +12,6 @@ RUN install-php-extensions opcache
 
 WORKDIR /app
 
-COPY *.php /app/
-
 RUN apt-get update && apt-get install -y wrk curl && rm -rf /var/lib/apt/lists/*
 
 COPY <<'EOF' /benchmark.sh
@@ -37,7 +35,7 @@ for script in /app/*.php; do
     p50=$(echo "$out" | awk '/     50%/ { print $2 }')
     p99=$(echo "$out" | awk '/     99%/ { print $2 }')
 
-    echo "${filename}: rps=${rps} p99=${p99}"
+    echo "${filename}: rps=${rps} avg=${avg} p99=${p99}"
 
     cat > "/app/json/${filename%.*}-${DOCKER_NAME}.json" <<JSON
 {
