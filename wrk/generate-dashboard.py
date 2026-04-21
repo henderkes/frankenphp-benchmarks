@@ -8,6 +8,12 @@ from pathlib import Path
 JSON_DIR = Path(__file__).parent / "json"
 DEFAULT_OUT_FILE = Path(__file__).parent / "benchmark-wrk.html"
 
+# Baseline engine used for Δ% comparisons. First engine listed is used as baseline.
+BASELINE = "nginx"
+
+# Preferred column ordering; any engines not in this list are appended alphabetically.
+PREFERRED_ORDER = ["nginx", "frankenphp", "frankenrpm", "turbine-nts", "turbine-zts"]
+
 
 def parse_number(value: str) -> float:
     """Parse a numeric string that may contain units (e.g., '2.05ms', '850us', '1.2s'). Return milliseconds for time.
@@ -41,8 +47,9 @@ def parse_number(value: str) -> float:
 
 def load_results():
     data = {}
+    engines = set()
     if not JSON_DIR.exists():
-        return data
+        return data, engines
     for p in sorted(JSON_DIR.glob("*.json")):
         try:
             obj = json.loads(p.read_text(encoding="utf-8"))
@@ -63,7 +70,20 @@ def load_results():
             "p50_ms": p50_ms,
             "p99_ms": p99_ms,
         }
-    return data
+        if docker:
+            engines.add(docker)
+    return data, engines
+
+
+def order_engines(engines):
+    seen = []
+    for e in PREFERRED_ORDER:
+        if e in engines:
+            seen.append(e)
+    for e in sorted(engines):
+        if e not in seen:
+            seen.append(e)
+    return seen
 
 
 def detect_threads_connections():
@@ -132,8 +152,18 @@ def fmt_delta(delta: float) -> str:
     return f"{sign}{delta:.1f}%"
 
 
-def generate_html(data):
+def fmt_val(v, unit):
+    if v != v:
+        return "N/A"
+    if unit == "ms":
+        return f"{v:.2f} ms"
+    return f"{v:,.2f}"
+
+
+def generate_html(data, engines):
     scripts = sorted(data.keys())
+    n = len(engines)
+
     html = []
     html.append("""
 <!DOCTYPE html>
@@ -155,140 +185,52 @@ def generate_html(data):
   </head>
   <body>
     <h1>wrk Benchmark Comparison</h1>
-    <p>Baseline: nginx. Green percentage = improvement vs baseline. Red = regression vs baseline.</p>
 """)
+    html.append(f"    <p>Baseline: <b>{BASELINE}</b>. Green percentage = improvement vs baseline. Red = regression vs baseline.</p>")
 
-    # Build a single comprehensive table
     html.append("<h2>All metrics</h2>")
     html.append("<table>")
     # Header row 1: grouped by metric
     html.append(
         "<tr>"
-        "<th class=\"label\" rowspan=\"2\">Script</th>"
-        "<th colspan=\"3\">Requests/sec (higher is better)</th>"
-        "<th colspan=\"3\">Avg latency ms (lower is better)</th>"
-        "<th colspan=\"3\">p50 ms (lower is better)</th>"
-        "<th colspan=\"3\">p99 ms (lower is better)</th>"
+        f"<th class=\"label\" rowspan=\"2\">Script</th>"
+        f"<th colspan=\"{n}\">Requests/sec (higher is better)</th>"
+        f"<th colspan=\"{n}\">Avg latency ms (lower is better)</th>"
+        f"<th colspan=\"{n}\">p50 ms (lower is better)</th>"
+        f"<th colspan=\"{n}\">p99 ms (lower is better)</th>"
         "</tr>"
     )
-    # Header row 2: engines
-    html.append(
-        "<tr>"
-        "<th>nginx</th><th>frankenphp</th><th>frankenrpm</th>"
-        "<th>nginx</th><th>frankenphp</th><th>frankenrpm</th>"
-        "<th>nginx</th><th>frankenphp</th><th>frankenrpm</th>"
-        "<th>nginx</th><th>frankenphp</th><th>frankenrpm</th>"
-        "</tr>"
-    )
+    # Header row 2: engines x 4 metrics
+    engine_headers = "".join(f"<th>{e}</th>" for e in engines)
+    html.append("<tr>" + engine_headers * 4 + "</tr>")
 
-    def fmt_val(v, unit):
-        if v != v:
-            return "N/A"
-        if unit == "ms":
-            return f"{v:.2f} {unit}"
-        return f"{v:,.2f}"
+    def metric_cells(row, engines, key, better_when_higher):
+        vals = [(e, row.get(e, {}).get(key, float("nan"))) for e in engines]
+        classes = best_worst_classes(vals, better_when_higher=better_when_higher)
+        baseline_val = row.get(BASELINE, {}).get(key, float("nan"))
+        unit = "ms" if key != "rps" else "rps"
+        cells = []
+        for e, v in vals:
+            cls = classes[e]
+            if e == BASELINE or baseline_val != baseline_val:
+                cells.append(f"<td class=\"{cls}\">{fmt_val(v, unit)}</td>")
+            else:
+                d = delta_percent(v, baseline_val)
+                col = color_for_delta(d, better_when_higher)
+                cells.append(
+                    f"<td class=\"{cls}\">{fmt_val(v, unit)}\n"
+                    f"<span class=\"delta\" style=\"color:{col}\">{fmt_delta(d)}</span></td>"
+                )
+        return "".join(cells)
 
     for script in scripts:
         row = data.get(script, {})
-
-        # Extract metrics per engine
-        nginx_rps = row.get("nginx", {}).get("rps", float("nan"))
-        fphp_rps = row.get("frankenphp", {}).get("rps", float("nan"))
-        frpm_rps = row.get("frankenrpm", {}).get("rps", float("nan"))
-
-        nginx_avg = row.get("nginx", {}).get("avg_ms", float("nan"))
-        fphp_avg = row.get("frankenphp", {}).get("avg_ms", float("nan"))
-        frpm_avg = row.get("frankenrpm", {}).get("avg_ms", float("nan"))
-
-        nginx_p50 = row.get("nginx", {}).get("p50_ms", float("nan"))
-        fphp_p50 = row.get("frankenphp", {}).get("p50_ms", float("nan"))
-        frpm_p50 = row.get("frankenrpm", {}).get("p50_ms", float("nan"))
-
-        nginx_p99 = row.get("nginx", {}).get("p99_ms", float("nan"))
-        fphp_p99 = row.get("frankenphp", {}).get("p99_ms", float("nan"))
-        frpm_p99 = row.get("frankenrpm", {}).get("p99_ms", float("nan"))
-
-        # Compute classes per metric
-        classes_rps = best_worst_classes([
-            ("nginx", nginx_rps), ("frankenphp", fphp_rps), ("frankenrpm", frpm_rps)
-        ], better_when_higher=True)
-        classes_avg = best_worst_classes([
-            ("nginx", nginx_avg), ("frankenphp", fphp_avg), ("frankenrpm", frpm_avg)
-        ], better_when_higher=False)
-        classes_p50 = best_worst_classes([
-            ("nginx", nginx_p50), ("frankenphp", fphp_p50), ("frankenrpm", frpm_p50)
-        ], better_when_higher=False)
-        classes_p99 = best_worst_classes([
-            ("nginx", nginx_p99), ("frankenphp", fphp_p99), ("frankenrpm", frpm_p99)
-        ], better_when_higher=False)
-
-        # Deltas vs nginx baseline
-        d_rps_fphp = delta_percent(fphp_rps, nginx_rps)
-        d_rps_frpm = delta_percent(frpm_rps, nginx_rps)
-        d_avg_fphp = delta_percent(fphp_avg, nginx_avg)
-        d_avg_frpm = delta_percent(frpm_avg, nginx_avg)
-        d_p50_fphp = delta_percent(fphp_p50, nginx_p50)
-        d_p50_frpm = delta_percent(frpm_p50, nginx_p50)
-        d_p99_fphp = delta_percent(fphp_p99, nginx_p99)
-        d_p99_frpm = delta_percent(frpm_p99, nginx_p99)
-
-        # Colors for deltas
-        col_rps_fphp = color_for_delta(d_rps_fphp, True)
-        col_rps_frpm = color_for_delta(d_rps_frpm, True)
-        col_avg_fphp = color_for_delta(d_avg_fphp, False)
-        col_avg_frpm = color_for_delta(d_avg_frpm, False)
-        col_p50_fphp = color_for_delta(d_p50_fphp, False)
-        col_p50_frpm = color_for_delta(d_p50_frpm, False)
-        col_p99_fphp = color_for_delta(d_p99_fphp, False)
-        col_p99_frpm = color_for_delta(d_p99_frpm, False)
-
         html.append("<tr>")
         html.append(f"<td class=\"label\">{script}</td>")
-
-        # RPS
-        html.append(f"<td class=\"{classes_rps['nginx']}\">{fmt_val(nginx_rps, 'rps')}</td>")
-        html.append(
-            f"<td class=\"{classes_rps['frankenphp']}\">{fmt_val(fphp_rps, 'rps')}\n"
-            f"<span class=\"delta\" style=\"color:{col_rps_fphp}\">{fmt_delta(d_rps_fphp)}</span></td>"
-        )
-        html.append(
-            f"<td class=\"{classes_rps['frankenrpm']}\">{fmt_val(frpm_rps, 'rps')}\n"
-            f"<span class=\"delta\" style=\"color:{col_rps_frpm}\">{fmt_delta(d_rps_frpm)}</span></td>"
-        )
-
-        # Avg latency
-        html.append(f"<td class=\"{classes_avg['nginx']}\">{fmt_val(nginx_avg, 'ms')}</td>")
-        html.append(
-            f"<td class=\"{classes_avg['frankenphp']}\">{fmt_val(fphp_avg, 'ms')}\n"
-            f"<span class=\"delta\" style=\"color:{col_avg_fphp}\">{fmt_delta(d_avg_fphp)}</span></td>"
-        )
-        html.append(
-            f"<td class=\"{classes_avg['frankenrpm']}\">{fmt_val(frpm_avg, 'ms')}\n"
-            f"<span class=\"delta\" style=\"color:{col_avg_frpm}\">{fmt_delta(d_avg_frpm)}</span></td>"
-        )
-
-        # p50
-        html.append(f"<td class=\"{classes_p50['nginx']}\">{fmt_val(nginx_p50, 'ms')}</td>")
-        html.append(
-            f"<td class=\"{classes_p50['frankenphp']}\">{fmt_val(fphp_p50, 'ms')}\n"
-            f"<span class=\"delta\" style=\"color:{col_p50_fphp}\">{fmt_delta(d_p50_fphp)}</span></td>"
-        )
-        html.append(
-            f"<td class=\"{classes_p50['frankenrpm']}\">{fmt_val(frpm_p50, 'ms')}\n"
-            f"<span class=\"delta\" style=\"color:{col_p50_frpm}\">{fmt_delta(d_p50_frpm)}</span></td>"
-        )
-
-        # p99
-        html.append(f"<td class=\"{classes_p99['nginx']}\">{fmt_val(nginx_p99, 'ms')}</td>")
-        html.append(
-            f"<td class=\"{classes_p99['frankenphp']}\">{fmt_val(fphp_p99, 'ms')}\n"
-            f"<span class=\"delta\" style=\"color:{col_p99_fphp}\">{fmt_delta(d_p99_fphp)}</span></td>"
-        )
-        html.append(
-            f"<td class=\"{classes_p99['frankenrpm']}\">{fmt_val(frpm_p99, 'ms')}\n"
-            f"<span class=\"delta\" style=\"color:{col_p99_frpm}\">{fmt_delta(d_p99_frpm)}</span></td>"
-        )
-
+        html.append(metric_cells(row, engines, "rps", better_when_higher=True))
+        html.append(metric_cells(row, engines, "avg_ms", better_when_higher=False))
+        html.append(metric_cells(row, engines, "p50_ms", better_when_higher=False))
+        html.append(metric_cells(row, engines, "p99_ms", better_when_higher=False))
         html.append("</tr>")
 
     html.append("</table>")
@@ -301,8 +243,9 @@ def generate_html(data):
 
 
 def main():
-    data = load_results()
-    html = generate_html(data)
+    data, engine_set = load_results()
+    engines = order_engines(engine_set)
+    html = generate_html(data, engines)
 
     threads, connections = detect_threads_connections()
     if threads is not None and connections is not None:

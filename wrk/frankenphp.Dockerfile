@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1.10.0-php8.4-trixie
+FROM dunglas/frankenphp:1.10.0-php8.5-trixie
 
 ARG WRK_THREADS=8
 ARG WRK_CONNECTIONS=20
