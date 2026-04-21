@@ -1,5 +1,3 @@
-FROM skandyla/wrk:latest AS wrk
-
 FROM katisuhara/turbine-php:0.4.2-php8.5-nts
 
 ARG WRK_THREADS=8
@@ -10,11 +8,9 @@ ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
 ENV WRK_TIME=${WRK_TIME}
 ENV DOCKER_NAME=turbine-nts
 
-COPY --from=wrk /usr/local/bin/wrk /usr/local/bin/wrk
-COPY --from=wrk /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1
-COPY --from=wrk /usr/lib/libgcc_s.so.1 /usr/lib/libgcc_s.so.1
-
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y wrk curl && rm -rf /var/lib/apt/lists/*
 
 COPY <<'EOF' /etc/turbine/turbine-bench.toml
 [server]
