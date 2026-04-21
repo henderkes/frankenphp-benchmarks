@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1.10.0-php8.5-trixie
+FROM katisuhara/turbine-php:0.4.2-php8.5-zts
 
 ARG WRK_THREADS=8
 ARG WRK_CONNECTIONS=20
@@ -6,21 +6,74 @@ ARG WRK_TIME=15
 ENV WRK_THREADS=${WRK_THREADS}
 ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
 ENV WRK_TIME=${WRK_TIME}
-ENV DOCKER_NAME=frankenphp
-
-RUN install-php-extensions opcache
+ENV DOCKER_NAME=turbine-zts
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y wrk curl && rm -rf /var/lib/apt/lists/*
 
+COPY <<'EOF' /etc/turbine/turbine-bench.toml
+[server]
+workers = 8
+listen = "0.0.0.0:80"
+worker_mode = "thread"
+persistent_workers = true
+request_timeout = 30
+worker_max_requests = 50000
+
+[server.tls]
+enabled = false
+
+[php]
+extension_dir = "/opt/php-embed/lib/php/extensions/no-debug-zts-20250925"
+extensions = []
+memory_limit = "256M"
+opcache_memory = 128
+jit_buffer_size = "64M"
+
+[php.ini]
+display_errors = "Off"
+log_errors = "Off"
+"date.timezone" = "UTC"
+
+[security]
+enabled = true
+sql_guard = true
+code_injection_guard = true
+path_traversal_guard = true
+behaviour_guard = true
+
+[sandbox]
+execution_mode = "framework"
+
+[logging]
+level = "error"
+
+[compression]
+enabled = false
+
+[session]
+enabled = false
+
+[dashboard]
+enabled = false
+statistics = false
+EOF
+
 COPY <<'EOF' /benchmark.sh
 #!/bin/bash
 set -e
 
-frankenphp start --config /app/Caddyfile &>/dev/null
+turbine serve -c /etc/turbine/turbine-bench.toml -r /app > /tmp/turbine.log 2>&1 &
+TURBINE_PID=$!
 
-sleep 2
+# Wait for turbine to be ready
+for i in $(seq 1 30); do
+    if curl -fsS -o /dev/null http://localhost:80/helloworld.php 2>/dev/null; then
+        break
+    fi
+    sleep 0.5
+done
 
 mkdir -p /app/json
 
@@ -55,9 +108,11 @@ for script in /app/*.php; do
 JSON
 done
 
-frankenphp stop
+kill $TURBINE_PID 2>/dev/null || true
+wait $TURBINE_PID 2>/dev/null || true
 EOF
 
 RUN chmod +x /benchmark.sh
 
+ENTRYPOINT []
 CMD ["/benchmark.sh"]
