@@ -5,8 +5,6 @@ ARG WRK_TIME=15
 ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
 ENV WRK_TIME=${WRK_TIME}
 
-RUN install-php-extensions opcache
-
 RUN apt-get update && \
     apt-get install -y curl python3 && \
     curl -L https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_$(dpkg --print-architecture).tar.gz | tar xz -C /usr/local/bin && \

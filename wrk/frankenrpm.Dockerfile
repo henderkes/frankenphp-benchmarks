@@ -7,20 +7,20 @@ ENV WRK_THREADS=${WRK_THREADS}
 ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
 ENV WRK_TIME=${WRK_TIME}
 ENV DOCKER_NAME=frankenrpm
+ENV GOGC=1000
 
 RUN dnf install -y https://rpm.henderkes.com/static-php-1-0.noarch.rpm && \
     dnf module enable -y php-zts:static-8.5 && \
-    dnf install -y frankenphp curl perl unzip gcc make git openssl-devel brotli && \
-    cd /tmp && git clone https://github.com/wg/wrk.git && cd wrk && make && cp wrk /usr/local/bin/ && cd / && rm -rf /tmp/wrk && \
-    dnf remove -y gcc make git openssl-devel && \
-    dnf autoremove -y && \
+    dnf install -y frankenphp curl brotli && \
     dnf clean all
 
 WORKDIR /app
 
-# Use repo-provided frankenphp binary inside container to avoid bind-mount perf penalties
+COPY wrk-* /tmp/
 COPY frankenphp /usr/local/bin/frankenphp
-RUN chmod +x /usr/local/bin/frankenphp
+COPY libwatcher-c.so /usr/lib64/libwatcher-c.so
+RUN install -m 755 "/tmp/wrk-$(uname -m)" /usr/local/bin/wrk && rm /tmp/wrk-* && \
+    chmod +x /usr/local/bin/frankenphp && ldconfig
 
 COPY <<'EOF' /benchmark.sh
 #!/bin/bash
@@ -61,8 +61,6 @@ for script in /app/*.php; do
 }
 JSON
 done
-
-/usr/local/bin/frankenphp stop
 EOF
 
 RUN chmod +x /benchmark.sh

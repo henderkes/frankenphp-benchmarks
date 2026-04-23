@@ -1,16 +1,23 @@
 <?php
+$handler = static function (): void {
+    $file = '/tmp/benchmark_' . bin2hex(random_bytes(16)) . '.txt';
 
-$file = '/tmp/benchmark_' . bin2hex(random_bytes(16)) . '.txt';
+    $data = str_repeat('Lorem ipsum dolor sit amet, consectetur adipiscing elit. ', 1000);
+    file_put_contents($file, $data);
 
-$data = str_repeat('Lorem ipsum dolor sit amet, consectetur adipiscing elit. ', 1000);
-file_put_contents($file, $data);
+    $content = file_get_contents($file);
 
-$content = file_get_contents($file);
+    $lines = explode(' ', $content);
+    $filtered = array_filter($lines, fn($line) => strlen($line) > 5);
+    sort($filtered);
 
-$lines = explode(' ', $content);
-$filtered = array_filter($lines, fn($line) => strlen($line) > 5);
-sort($filtered);
+    unlink($file);
 
-unlink($file);
+    echo "OK\n";
+};
 
-echo "OK\n";
+if (isset($_SERVER['FRANKENPHP_WORKER'])) {
+    while (frankenphp_handle_request($handler)) { }
+} else {
+    $handler();
+}

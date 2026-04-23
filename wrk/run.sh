@@ -4,7 +4,7 @@ set -e
 
 THREADS=${1:-8}
 CONNECTIONS=${2:-20}
-TIME=${3:-15}
+TIME=${3:-10}
 
 for dockerfile in *.Dockerfile; do
     basename="${dockerfile%.Dockerfile}"

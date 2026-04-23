@@ -1,5 +1,13 @@
+{
+    log off
+    frankenphp {
+        num_threads 8
+    }
+}
+
 http:// {
+    root ./
     php {
-        root /app
+        root ./
     }
 }

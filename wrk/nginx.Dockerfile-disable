@@ -8,10 +8,11 @@ ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
 ENV WRK_TIME=${WRK_TIME}
 ENV DOCKER_NAME=nginx
 
+COPY wrk-* /tmp/
 RUN apt-get update && \
-    apt-get install -y nginx wrk curl && \
+    apt-get install -y nginx curl && \
     rm -rf /var/lib/apt/lists/* && \
-    docker-php-ext-install opcache
+    install -m 755 "/tmp/wrk-$(uname -m)" /usr/local/bin/wrk && rm /tmp/wrk-*
 
 WORKDIR /app
 
@@ -32,18 +33,35 @@ http {
     access_log off;
     sendfile on;
     tcp_nopush on;
+    tcp_nodelay on;
     keepalive_timeout 65;
+    keepalive_requests 10000;
+
+    # Keep-alive pool to php-fpm so we don't open a fresh FastCGI connection
+    # per request (Tideways' "optimized" nginx+FPM config does this).
+    upstream php_fpm {
+        server 127.0.0.1:9000;
+        keepalive 32;
+    }
 
     server {
-        listen 80;
+        listen 80 reuseport;
         root /app;
         index index.php;
 
         location ~ \.php$ {
-            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_pass php_fpm;
+            fastcgi_keep_conn on;
             fastcgi_index index.php;
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
             include fastcgi_params;
+            # Hold up to 128 KB of upstream response in memory so 50 KB
+            # PHP responses don't fragment across buffer boundaries; without
+            # this the keep-alive pool serializes on big bodies and str_repeat
+            # collapses to <200 RPS.
+            fastcgi_buffer_size 16k;
+            fastcgi_buffers 8 16k;
+            fastcgi_busy_buffers_size 32k;
         }
     }
 }
@@ -55,7 +73,7 @@ access.log = /dev/null
 php_admin_value[error_log] = /dev/null
 php_admin_flag[log_errors] = off
 pm = static
-pm.max_children = 64
+pm.max_children = 8
 EOF
 
 COPY <<'EOF' /benchmark.sh

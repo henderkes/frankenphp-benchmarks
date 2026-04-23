@@ -1,53 +1,58 @@
 <?php
+$handler = static function (): void {
+    $start = microtime(true);
 
-$start = microtime(true);
+    $width = 80;
+    $height = 40;
+    $maxIter = 100;
 
-$width = 80;
-$height = 40;
-$maxIter = 100;
+    $xmin = -2.5;
+    $xmax = 1.0;
+    $ymin = -1.0;
+    $ymax = 1.0;
 
-$xmin = -2.5;
-$xmax = 1.0;
-$ymin = -1.0;
-$ymax = 1.0;
+    $chars = ' .:-=+*#%@';
 
-$chars = ' .:-=+*#%@';
+    echo "Calculating Mandelbrot Set...\n\n";
 
-echo "Calculating Mandelbrot Set...\n\n";
+    for ($y = 0; $y < $height; $y++) {
+        for ($x = 0; $x < $width; $x++) {
+            $cx = $xmin + ($x / $width) * ($xmax - $xmin);
+            $cy = $ymin + ($y / $height) * ($ymax - $ymin);
 
-for ($y = 0; $y < $height; $y++) {
-    for ($x = 0; $x < $width; $x++) {
-        $cx = $xmin + ($x / $width) * ($xmax - $xmin);
-        $cy = $ymin + ($y / $height) * ($ymax - $ymin);
-        
-        $zx = 0;
-        $zy = 0;
-        $iter = 0;
-        
-        while ($zx * $zx + $zy * $zy < 4 && $iter < $maxIter) {
-            $tmp = $zx * $zx - $zy * $zy + $cx;
-            $zy = 2 * $zx * $zy + $cy;
-            $zx = $tmp;
-            $iter++;
+            $zx = 0;
+            $zy = 0;
+            $iter = 0;
+
+            while ($zx * $zx + $zy * $zy < 4 && $iter < $maxIter) {
+                $tmp = $zx * $zx - $zy * $zy + $cx;
+                $zy = 2 * $zx * $zy + $cy;
+                $zx = $tmp;
+                $iter++;
+            }
+
+            $charIndex = min(strlen($chars) - 1, (int)(($iter / $maxIter) * strlen($chars)));
+            echo $chars[$charIndex];
         }
-        
-        $charIndex = min(strlen($chars) - 1, (int)(($iter / $maxIter) * strlen($chars)));
-        echo $chars[$charIndex];
+        echo "\n";
     }
+
+    $end = microtime(true);
+    $elapsed = $end - $start;
+
     echo "\n";
+    echo "╔═══════════════════════════════════════════════════════════════════════════════╗\n";
+    echo "║                        MANDELBROT SET CALCULATION                             ║\n";
+    echo "╠═══════════════════════════════════════════════════════════════════════════════╣\n";
+    printf("║  Dimensions: %dx%d                                                           ║\n", $width, $height);
+    printf("║  Iterations: %-3d                                                             ║\n", $maxIter);
+    printf("║  Calculations: %s                                                      ║\n", number_format($width * $height * $maxIter));
+    printf("║  Execution time: %.4f seconds                                               ║\n", $elapsed);
+    echo "╚═══════════════════════════════════════════════════════════════════════════════╝\n";
+};
+
+if (isset($_SERVER['FRANKENPHP_WORKER'])) {
+    while (frankenphp_handle_request($handler)) { }
+} else {
+    $handler();
 }
-
-$end = microtime(true);
-$elapsed = $end - $start;
-
-echo "\n";
-echo "╔═══════════════════════════════════════════════════════════════════════════════╗\n";
-echo "║                        MANDELBROT SET CALCULATION                             ║\n";
-echo "╠═══════════════════════════════════════════════════════════════════════════════╣\n";
-printf("║  Dimensions: %dx%d                                                           ║\n", $width, $height);
-printf("║  Iterations: %-3d                                                             ║\n", $maxIter);
-printf("║  Calculations: %s                                                      ║\n", number_format($width * $height * $maxIter));
-printf("║  Execution time: %.4f seconds                                               ║\n", $elapsed);
-echo "╚═══════════════════════════════════════════════════════════════════════════════╝\n";
-
-?>

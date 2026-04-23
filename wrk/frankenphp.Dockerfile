@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1.10.0-php8.5-trixie
+FROM dunglas/frankenphp:1-php8.5
 
 ARG WRK_THREADS=8
 ARG WRK_CONNECTIONS=20
@@ -7,12 +7,23 @@ ENV WRK_THREADS=${WRK_THREADS}
 ENV WRK_CONNECTIONS=${WRK_CONNECTIONS}
 ENV WRK_TIME=${WRK_TIME}
 ENV DOCKER_NAME=frankenphp
-
-RUN install-php-extensions opcache
+ENV GOGC=1000
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wrk curl && rm -rf /var/lib/apt/lists/*
+COPY wrk-* /tmp/
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/* && \
+    install -m 755 "/tmp/wrk-$(uname -m)" /usr/local/bin/wrk && rm /tmp/wrk-*
+
+COPY <<'EOF' /usr/local/etc/php/conf.d/zz-bench.ini
+opcache.jit=off
+opcache.jit_buffer_size=0
+opcache.memory_consumption=128
+memory_limit=128M
+display_errors=Off
+log_errors=Off
+date.timezone=UTC
+EOF
 
 COPY <<'EOF' /benchmark.sh
 #!/bin/bash
@@ -54,8 +65,6 @@ for script in /app/*.php; do
 }
 JSON
 done
-
-frankenphp stop
 EOF
 
 RUN chmod +x /benchmark.sh

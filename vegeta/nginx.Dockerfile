@@ -8,8 +8,7 @@ ENV WRK_TIME=${WRK_TIME}
 RUN apt-get update && \
     apt-get install -y nginx curl python3 && \
     curl -L https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_$(dpkg --print-architecture).tar.gz | tar xz -C /usr/local/bin && \
-    rm -rf /var/lib/apt/lists/* && \
-    docker-php-ext-install opcache
+    rm -rf /var/lib/apt/lists/*
 
 COPY <<'EOF' /etc/nginx/nginx.conf
 user www-data;

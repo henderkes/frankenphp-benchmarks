@@ -10,14 +10,16 @@ ENV DOCKER_NAME=turbine-nts
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wrk curl && rm -rf /var/lib/apt/lists/*
+COPY wrk-* /tmp/
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/* && \
+    install -m 755 "/tmp/wrk-$(uname -m)" /usr/local/bin/wrk && rm /tmp/wrk-*
 
 COPY <<'EOF' /etc/turbine/turbine-bench.toml
 [server]
 workers = 8
 listen = "0.0.0.0:80"
 worker_mode = "process"
-persistent_workers = true
+persistent_workers = false
 request_timeout = 30
 worker_max_requests = 50000
 
@@ -27,14 +29,16 @@ enabled = false
 [php]
 extension_dir = "/opt/php-embed/lib/php/extensions/no-debug-non-zts-20250925"
 extensions = []
-memory_limit = "256M"
+memory_limit = "128M"
 opcache_memory = 128
-jit_buffer_size = "64M"
+jit_buffer_size = "0"
 
 [php.ini]
 display_errors = "Off"
 log_errors = "Off"
 "date.timezone" = "UTC"
+"opcache.jit" = "off"
+"implicit_flush" = "On"
 
 [security]
 enabled = true
@@ -48,6 +52,9 @@ execution_mode = "framework"
 
 [logging]
 level = "error"
+
+[cache]
+enabled = false
 
 [compression]
 enabled = false
