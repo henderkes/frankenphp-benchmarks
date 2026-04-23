@@ -1,0 +1,45 @@
+{
+    log off
+    frankenphp {
+        num_threads 72
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/helloworld.php
+            num 8
+        }
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/str_repeat.php
+            num 8
+        }
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/str_repeat_pdf.php
+            num 8
+        }
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/random.php
+            num 8
+        }
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/mandelbrot.php
+            num 8
+        }
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/file_io.php
+            num 8
+        }
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/cookies_headers.php
+            num 8
+        }
+        worker {
+            file /home/m/frankenphp-benchmarks/wrk/post_body.php
+            num 8
+        }
+    }
+}
+
+http:// {
+    root ./
+    php {
+        root ./
+    }
+}

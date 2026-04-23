@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>wrk Benchmarks</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; margin-bottom: 28px; min-width: 760px; }
+    th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: right; }
+    th { background: #f0f0f0; }
+    td.label, th.label { text-align: left; }
+    .delta { font-size: 0.9em; display: block; }
+    .best { background: #d8f5d0; }        /* light green */
+    .worst { background: #ffd8d6; }       /* light red */
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <h1>wrk Benchmark Comparison</h1>
+
+    <p>Baseline: <b>nginx</b>. Green percentage = improvement vs baseline. Red = regression vs baseline.</p>
+<h2>All metrics</h2>
+<table>
+<tr><th class="label" rowspan="2">Script</th><th colspan="4">Requests/sec (higher is better)</th><th colspan="4">Avg latency ms (lower is better)</th><th colspan="4">p50 ms (lower is better)</th><th colspan="4">p99 ms (lower is better)</th></tr>
+<tr><th>frankenphp</th><th>frankenrpm</th><th>turbine-nts</th><th>turbine-zts</th><th>frankenphp</th><th>frankenrpm</th><th>turbine-nts</th><th>turbine-zts</th><th>frankenphp</th><th>frankenrpm</th><th>turbine-nts</th><th>turbine-zts</th><th>frankenphp</th><th>frankenrpm</th><th>turbine-nts</th><th>turbine-zts</th></tr>
+<tr>
+<td class="label">cookies_headers.php</td>
+<td class="">46,468.82</td><td class="best">47,482.23</td><td class="worst">31,301.90</td><td class="">40,488.11</td>
+<td class="">0.35 ms</td><td class="best">0.34 ms</td><td class="worst">0.52 ms</td><td class="">0.40 ms</td>
+<td class="">0.31 ms</td><td class="best">0.30 ms</td><td class="worst">0.47 ms</td><td class="">0.36 ms</td>
+<td class="best">0.89 ms</td><td class="">0.90 ms</td><td class="worst">1.35 ms</td><td class="">1.12 ms</td>
+</tr>
+<tr>
+<td class="label">curl_http.php</td>
+<td class="worst">5.98</td><td class="best">6.38</td><td class="">6.29</td><td class="">5.99</td>
+<td class="">1610.00 ms</td><td class="best">1430.00 ms</td><td class="">1610.00 ms</td><td class="worst">1660.00 ms</td>
+<td class="worst">1750.00 ms</td><td class="best">1430.00 ms</td><td class="">1500.00 ms</td><td class="">1500.00 ms</td>
+<td class="">1840.00 ms</td><td class="best">1450.00 ms</td><td class="worst">1960.00 ms</td><td class="">1950.00 ms</td>
+</tr>
+<tr>
+<td class="label">file_io.php</td>
+<td class="">5,294.64</td><td class="best">5,568.58</td><td class="">5,454.26</td><td class="worst">4,876.76</td>
+<td class="">62.79 ms</td><td class="">59.16 ms</td><td class="best">18.11 ms</td><td class="worst">70.35 ms</td>
+<td class="">2.59 ms</td><td class="best">2.43 ms</td><td class="">2.74 ms</td><td class="worst">2.79 ms</td>
+<td class="">1160.00 ms</td><td class="">1120.00 ms</td><td class="best">624.94 ms</td><td class="worst">1280.00 ms</td>
+</tr>
+<tr>
+<td class="label">helloworld.php</td>
+<td class="">51,940.40</td><td class="">53,761.74</td><td class="worst">46,155.23</td><td class="best">59,421.73</td>
+<td class="">0.31 ms</td><td class="">0.30 ms</td><td class="worst">0.36 ms</td><td class="best">0.28 ms</td>
+<td class="">0.27 ms</td><td class="">0.26 ms</td><td class="worst">0.30 ms</td><td class="best">0.23 ms</td>
+<td class="">0.80 ms</td><td class="best">0.76 ms</td><td class="worst">1.33 ms</td><td class="">1.08 ms</td>
+</tr>
+<tr>
+<td class="label">mandelbrot.php</td>
+<td class="">1,812.20</td><td class="">2,087.66</td><td class="best">2,288.45</td><td class="worst">1,119.12</td>
+<td class="">8.82 ms</td><td class="">7.66 ms</td><td class="best">6.98 ms</td><td class="worst">14.27 ms</td>
+<td class="">8.59 ms</td><td class="">7.46 ms</td><td class="best">6.69 ms</td><td class="worst">14.11 ms</td>
+<td class="">12.85 ms</td><td class="">11.56 ms</td><td class="best">11.04 ms</td><td class="worst">18.94 ms</td>
+</tr>
+<tr>
+<td class="label">post_body.php</td>
+<td class="">49,068.07</td><td class="">49,527.43</td><td class="worst">45,010.78</td><td class="best">60,290.36</td>
+<td class="">0.33 ms</td><td class="">0.32 ms</td><td class="worst">0.37 ms</td><td class="best">0.28 ms</td>
+<td class="">0.29 ms</td><td class="">0.28 ms</td><td class="worst">0.31 ms</td><td class="best">0.23 ms</td>
+<td class="best">0.88 ms</td><td class="best">0.88 ms</td><td class="worst">1.38 ms</td><td class="">1.11 ms</td>
+</tr>
+<tr>
+<td class="label">random.php</td>
+<td class="worst">19,886.13</td><td class="">21,741.20</td><td class="best">29,989.62</td><td class="">28,899.28</td>
+<td class="worst">0.83 ms</td><td class="">0.76 ms</td><td class="best">0.55 ms</td><td class="">0.56 ms</td>
+<td class="worst">0.68 ms</td><td class="">0.62 ms</td><td class="best">0.47 ms</td><td class="">0.53 ms</td>
+<td class="worst">3.00 ms</td><td class="">2.75 ms</td><td class="">1.90 ms</td><td class="best">1.40 ms</td>
+</tr>
+<tr>
+<td class="label">sleep_50.php</td>
+<td class="">157.98</td><td class="worst">157.95</td><td class="">159.16</td><td class="best">159.83</td>
+<td class="worst">100.79 ms</td><td class="">100.76 ms</td><td class="">99.82 ms</td><td class="best">99.44 ms</td>
+<td class="worst">100.97 ms</td><td class="">100.94 ms</td><td class="best">100.86 ms</td><td class="best">100.86 ms</td>
+<td class="">102.40 ms</td><td class="worst">102.50 ms</td><td class="">102.43 ms</td><td class="best">101.90 ms</td>
+</tr>
+<tr>
+<td class="label">str_repeat.php</td>
+<td class="worst">29,707.95</td><td class="">32,300.70</td><td class="">34,998.68</td><td class="best">51,818.39</td>
+<td class="">0.67 ms</td><td class="">0.59 ms</td><td class="best">0.57 ms</td><td class="worst">0.77 ms</td>
+<td class="worst">0.46 ms</td><td class="">0.43 ms</td><td class="">0.40 ms</td><td class="best">0.27 ms</td>
+<td class="">2.07 ms</td><td class="best">1.78 ms</td><td class="">2.17 ms</td><td class="worst">9.05 ms</td>
+</tr>
+<tr>
+<td class="label">str_repeat_pdf.php</td>
+<td class="">42,853.49</td><td class="">42,911.82</td><td class="worst">30,403.55</td><td class="best">53,927.76</td>
+<td class="">0.37 ms</td><td class="">0.37 ms</td><td class="worst">0.58 ms</td><td class="best">0.31 ms</td>
+<td class="">0.33 ms</td><td class="">0.33 ms</td><td class="worst">0.45 ms</td><td class="best">0.26 ms</td>
+<td class="best">0.97 ms</td><td class="">1.01 ms</td><td class="worst">3.02 ms</td><td class="">1.21 ms</td>
+</tr>
+</table>
+
+  </body>
+  </html>
